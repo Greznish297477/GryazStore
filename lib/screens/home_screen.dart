@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/app_info.dart';
@@ -261,31 +262,7 @@ class _AppCard extends StatelessWidget {
           child: Row(
             children: [
               // Icon
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primaryContainer,
-                      theme.colorScheme.secondaryContainer,
-                    ],
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    app.displayName.isNotEmpty ? app.displayName[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-              ),
+              _AppListIcon(app: app),
               const SizedBox(width: 16),
 
               // Info
@@ -368,6 +345,61 @@ class _Chip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _AppListIcon extends StatelessWidget {
+  final AppInfo app;
+  const _AppListIcon({required this.app});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final letter = app.displayName.isNotEmpty ? app.displayName[0].toUpperCase() : '?';
+    final url = app.iconUrl ?? app.ownerAvatar;
+
+    Widget letterIcon() {
+      return Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.primaryContainer,
+              theme.colorScheme.secondaryContainer,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Text(
+            letter,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (url == null || url.isEmpty) return letterIcon();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => letterIcon(),
+        errorWidget: (_, __, ___) => letterIcon(),
       ),
     );
   }

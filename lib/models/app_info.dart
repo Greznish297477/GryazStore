@@ -11,6 +11,7 @@ class AppInfo {
   final int? apkSize;
   final String htmlUrl;
   final String? ownerAvatar;
+  final String? iconUrl;
 
   AppInfo({
     required this.name,
@@ -25,15 +26,18 @@ class AppInfo {
     this.apkSize,
     required this.htmlUrl,
     this.ownerAvatar,
+    this.iconUrl,
   });
 
   String get displayName {
-    // Красивые названия
     switch (repoName.toLowerCase()) {
       case 'aptechka':
         return 'Аптечка';
       case 'multimail':
         return 'MultiMail';
+      case 'gryazstore':
+      case 'gryaz_store':
+        return 'Gryaz Store';
       default:
         return name.isNotEmpty ? name : repoName;
     }
@@ -54,5 +58,14 @@ class AppInfo {
     return '${publishedAt.day.toString().padLeft(2, '0')}.'
         '${publishedAt.month.toString().padLeft(2, '0')}.'
         '${publishedAt.year}';
+  }
+
+  /// Цвет для буквенной иконки, если нет картинки
+  int get colorSeed {
+    var hash = 0;
+    for (final c in repoName.codeUnits) {
+      hash = (hash * 31 + c) & 0x7FFFFFFF;
+    }
+    return hash;
   }
 }

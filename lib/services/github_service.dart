@@ -6,7 +6,6 @@ class GitHubService {
   static const String _username = 'Greznish297477';
   static const String _baseUrl = 'https://api.github.com';
 
-  /// Получает список приложений из релизов всех публичных репозиториев
   Future<List<AppInfo>> fetchApps() async {
     final repos = await _fetchRepos();
     final List<AppInfo> apps = [];
@@ -18,7 +17,6 @@ class GitHubService {
       }
     }
 
-    // Сортируем по дате публикации (новые сверху)
     apps.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
     return apps;
   }
@@ -41,8 +39,26 @@ class GitHubService {
     return data.cast<Map<String, dynamic>>();
   }
 
+  /// Иконка: пробуем известные пути, иначе Open Graph / аватар
+  String? _resolveIconUrl(String repoName, String? ownerAvatar) {
+    final lower = repoName.toLowerCase();
+    // Известные иконки из репозиториев (raw)
+    const known = <String, String>{
+      // можно добавить прямые ссылки на иконки позже
+    };
+    if (known.containsKey(lower)) return known[lower];
+
+    // GitHub Open Graph preview репозитория — часто выглядит как карточка
+    // Более стабильный вариант: аватар владельца
+    if (ownerAvatar != null && ownerAvatar.isNotEmpty) {
+      return ownerAvatar;
+    }
+    return null;
+  }
+
   Future<AppInfo?> _fetchLatestRelease(Map<String, dynamic> repo) async {
     final repoName = repo['name'] as String;
+    final ownerAvatar = repo['owner']?['avatar_url'] as String?;
     final url = Uri.parse('$_baseUrl/repos/$_username/$repoName/releases/latest');
 
     try {
@@ -54,14 +70,12 @@ class GitHubService {
         },
       );
 
-      // 404 = нет релизов
       if (response.statusCode == 404) return null;
       if (response.statusCode != 200) return null;
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final assets = data['assets'] as List<dynamic>? ?? [];
 
-      // Ищем APK (предпочитаем release, потом любой .apk)
       Map<String, dynamic>? apkAsset;
       for (final asset in assets) {
         final name = (asset['name'] as String).toLowerCase();
@@ -77,6 +91,7 @@ class GitHubService {
       if (apkAsset == null) return null;
 
       final publishedAt = DateTime.parse(data['published_at'] as String);
+      final iconUrl = _resolveIconUrl(repoName, ownerAvatar);
 
       return AppInfo(
         name: (data['name'] as String?)?.isNotEmpty == true
@@ -92,10 +107,10 @@ class GitHubService {
         apkName: apkAsset['name'] as String?,
         apkSize: apkAsset['size'] as int?,
         htmlUrl: data['html_url'] as String? ?? repo['html_url'] as String,
-        ownerAvatar: repo['owner']?['avatar_url'] as String?,
+        ownerAvatar: ownerAvatar,
+        iconUrl: iconUrl,
       );
     } catch (e) {
-      // Игнорируем ошибки отдельного репозитория
       return null;
     }
   }
